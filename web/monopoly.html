@@ -27,8 +27,8 @@
   body {
     font-family: 'Noto Serif SC', serif;
     background: var(--navy);
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden;
     position: relative;
   }
 
@@ -44,11 +44,12 @@
     z-index: 0;
   }
 
-  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; height: 100vh; overflow: hidden; }
 
   /* ===== 页面切换 ===== */
-  .page { display: none; padding: 0 0 80px; }
+  .page { display: none; position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding: 0 0 80px; background: var(--navy); }
   .page.active { display: block; }
+  #loginPage.active { display: flex; }
 
   /* ===== Header ===== */
   .header {
@@ -324,12 +325,16 @@
 
   /* ===== 登录页 ===== */
   #loginPage {
+    padding: 40px 20px;
+    overflow: hidden;
+    background: var(--navy);
+  }
+  #loginPage.active {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: 40px 20px;
+    height: 100%;
   }
   .login-box {
     width: 100%;
@@ -457,6 +462,59 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(245,200,66,0.2); border-radius: 2px; }
 
+  /* ===== 玩家选择按钮 ===== */
+  .player-select-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .player-select-btn {
+    background: rgba(13,27,62,0.8);
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 10px;
+    padding: 10px 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .player-select-btn:active { transform: scale(0.96); }
+  .player-select-btn.selected {
+    border-color: var(--gold);
+    background: rgba(245,200,66,0.12);
+    box-shadow: 0 0 0 2px rgba(245,200,66,0.2);
+  }
+  .player-select-btn .psb-name {
+    color: var(--cream);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .player-select-btn .psb-coins {
+    color: rgba(245,200,66,0.7);
+    font-size: 12px;
+  }
+  .player-select-btn.selected .psb-name { color: var(--gold); }
+  .player-select-label {
+    color: rgba(245,200,66,0.7);
+    font-size: 12px;
+    margin-bottom: 8px;
+    display: block;
+    letter-spacing: 1px;
+  }
+  .selected-display {
+    color: var(--gold);
+    font-size: 13px;
+    margin-top: 6px;
+    min-height: 18px;
+    letter-spacing: 0.5px;
+  }
+
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .animate-in { animation: fadeIn 0.3s ease forwards; }
 </style>
@@ -513,8 +571,9 @@
     <div class="card">
       <div class="card-title">👤 玩家转账</div>
       <div class="input-group">
-        <label class="input-label">转账给</label>
-        <select id="transferTo"></select>
+        <span class="player-select-label">转账给</span>
+        <div id="transferToGrid" class="player-select-grid"><div class="loading">加载中</div></div>
+        <div class="selected-display" id="transferSelectedDisplay"></div>
       </div>
       <div class="input-group">
         <label class="input-label">金额</label>
@@ -569,6 +628,9 @@
 
   <!-- 管理员密码验证 -->
   <div id="adminLock" style="padding:40px 16px">
+    <div style="margin-bottom:12px">
+      <button class="btn btn-ghost btn-sm" style="width:auto" onclick="backFromAdmin()">← 返回</button>
+    </div>
     <div class="card">
       <div class="card-title">🔐 管理员验证</div>
       <div class="input-group">
@@ -611,8 +673,9 @@
     <div class="card">
       <div class="card-title">➕ 单独增加资金</div>
       <div class="input-group">
-        <label class="input-label">目标玩家</label>
-        <select id="addTarget"></select>
+        <span class="player-select-label">目标玩家</span>
+        <div id="addTargetGrid" class="player-select-grid"><div class="loading">加载中</div></div>
+        <div class="selected-display" id="addTargetSelectedDisplay"></div>
       </div>
       <div class="input-group">
         <label class="input-label">增加金额</label>
@@ -809,6 +872,14 @@ function goAdmin() {
   document.getElementById('bottomNav').style.display = 'none';
 }
 
+function backFromAdmin() {
+  if (currentUser) {
+    showMainApp();
+  } else {
+    showPage('loginPage');
+  }
+}
+
 // ===== 加载玩家列表 =====
 async function loadPlayers() {
   try {
@@ -816,9 +887,21 @@ async function loadPlayers() {
     if (!res.success) return;
     allPlayersCache = res.players;
 
-    // 更新当前用户余额
+    // 更新当前用户余额，查不到说明已被删除
     const me = res.players.find(p => p.name === currentUser?.name);
-    if (me) currentUser.coins = me.coins;
+    if (currentUser) {
+      if (!me) {
+        // 用户已被删除，退出登录
+        delCookie('monopoly_user');
+        currentUser = null;
+        adminPassword = null;
+        document.getElementById('bottomNav').style.display = 'none';
+        toast('⚠️ 账号已被删除，请重新登录', 'error');
+        setTimeout(() => showPage('loginPage'), 1200);
+        return;
+      }
+      currentUser.coins = me.coins;
+    }
 
     // 显示我的余额
     if (currentUser) {
@@ -863,16 +946,35 @@ async function loadPlayers() {
 // ===== 转账页初始化 =====
 async function initTransferPage() {
   await loadPlayers();
-  const sel = document.getElementById('transferTo');
   const others = allPlayersCache.filter(p => p.name !== currentUser?.name);
-  sel.innerHTML = others.length
-    ? others.map(p => `<option value="${p.name}">${p.name} (${formatCoinsShort(p.coins)})</option>`).join('')
-    : '<option value="">暂无其他玩家</option>';
+  const grid = document.getElementById('transferToGrid');
+  const display = document.getElementById('transferSelectedDisplay');
+  // 清空已选
+  window._transferTo = null;
+  display.textContent = '';
+
+  if (!others.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">暂无其他玩家</div>';
+    return;
+  }
+  grid.innerHTML = others.map(p => `
+    <button class="player-select-btn" onclick="selectTransferTarget('${p.name}', '${formatCoinsShort(p.coins)}', this)">
+      <span class="psb-name">👤 ${p.name}</span>
+      <span class="psb-coins">${formatCoinsShort(p.coins)}</span>
+    </button>
+  `).join('');
+}
+
+function selectTransferTarget(name, coins, el) {
+  document.querySelectorAll('#transferToGrid .player-select-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  window._transferTo = name;
+  document.getElementById('transferSelectedDisplay').textContent = `✅ 已选：${name}（${coins}）`;
 }
 
 // ===== 玩家转账 =====
 async function doTransfer() {
-  const to = document.getElementById('transferTo').value;
+  const to = window._transferTo;
   const amount = getKValue('transferAmt', 'transferUnit');
   if (!to) { toast('请选择转账对象', 'error'); return; }
   if (!amount) { toast('请输入有效金额', 'error'); return; }
@@ -885,6 +987,7 @@ async function doTransfer() {
       currentUser.coins = res.fromCoins;
       toast(`✅ 成功转账 ${formatCoinsShort(amount)} 给 ${to}`, 'success');
       document.getElementById('transferAmt').value = '';
+      window._transferTo = null;
       initTransferPage();
     } else {
       toast(res.msg || '转账失败', 'error');
@@ -936,11 +1039,21 @@ async function loadAdminPlayers() {
     if (!res.success) return;
     allPlayersCache = res.players;
 
-    // 更新下拉框
-    const sel = document.getElementById('addTarget');
-    sel.innerHTML = res.players.map(p =>
-      `<option value="${p.name}">${p.name} (${formatCoinsShort(p.coins)})</option>`
-    ).join('') || '<option>暂无玩家</option>';
+    // 更新单独增加目标玩家按钮
+    const grid = document.getElementById('addTargetGrid');
+    const display = document.getElementById('addTargetSelectedDisplay');
+    window._addTarget = null;
+    if (display) display.textContent = '';
+    if (grid) {
+      grid.innerHTML = res.players.length
+        ? res.players.map(p => `
+          <button class="player-select-btn" onclick="selectAddTarget('${p.name}', '${formatCoinsShort(p.coins)}', this)">
+            <span class="psb-name">👤 ${p.name}</span>
+            <span class="psb-coins">${formatCoinsShort(p.coins)}</span>
+          </button>
+        `).join('')
+        : '<div class="empty-state" style="grid-column:1/-1">暂无玩家</div>';
+    }
 
     // 删除列表
     const list = document.getElementById('adminPlayerList');
@@ -956,6 +1069,13 @@ async function loadAdminPlayers() {
       </div>
     `).join('');
   } catch(e) { toast('加载失败', 'error'); }
+}
+
+function selectAddTarget(name, coins, el) {
+  document.querySelectorAll('#addTargetGrid .player-select-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  window._addTarget = name;
+  document.getElementById('addTargetSelectedDisplay').textContent = `✅ 已选：${name}（${coins}）`;
 }
 
 // ===== 全选 =====
@@ -991,7 +1111,7 @@ async function doGiveAll() {
 
 // ===== 单独增加 =====
 async function doAddCoins() {
-  const name = document.getElementById('addTarget').value;
+  const name = window._addTarget;
   const amount = getKValue('addAmt', 'addUnit');
   if (!name) { toast('请选择玩家', 'error'); return; }
   if (!amount) { toast('请输入有效金额', 'error'); return; }
