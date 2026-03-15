@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎩 大富翁 · 金币银行</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #F5C842;
+    --gold-light: #FFE680;
+    --gold-dark: #C8960C;
+    --red: #C0392B;
+    --red-dark: #922B21;
+    --green: #1A7A4A;
+    --green-light: #27AE60;
+    --navy: #0D1B3E;
+    --navy-light: #1A2F5A;
+    --cream: #FFF8E7;
+    --cream-dark: #F0E6CC;
+    --shadow: rgba(0,0,0,0.5);
+    --border-ornate: 3px solid var(--gold-dark);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Serif SC', serif;
+    background: var(--navy);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ===== 背景图案 ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(245,200,66,0.04) 0px, rgba(245,200,66,0.04) 1px, transparent 1px, transparent 50px),
+      repeating-linear-gradient(-45deg, rgba(245,200,66,0.04) 0px, rgba(245,200,66,0.04) 1px, transparent 1px, transparent 50px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+
+  /* ===== 页面切换 ===== */
+  .page { display: none; padding: 0 0 80px; }
+  .page.active { display: block; }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, var(--navy-light) 0%, #0A1628 100%);
+    border-bottom: 3px solid var(--gold-dark);
+    padding: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-title {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--gold);
+    font-size: 18px;
+    text-shadow: 0 0 20px rgba(245,200,66,0.5);
+    letter-spacing: 1px;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .refresh-btn:active { background: rgba(245,200,66,0.15); transform: scale(0.95); }
+
+  /* ===== 大标题区域 ===== */
+  .hero {
+    text-align: center;
+    padding: 40px 20px 30px;
+    position: relative;
+  }
+  .hero-icon { font-size: 56px; display: block; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(245,200,66,0.4)); }
+  .hero-title {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--gold);
+    font-size: 26px;
+    font-weight: 900;
+    text-shadow: 0 2px 20px rgba(245,200,66,0.6), 0 0 40px rgba(245,200,66,0.2);
+    letter-spacing: 2px;
+  }
+  .hero-sub { color: rgba(245,200,66,0.6); font-size: 13px; margin-top: 6px; letter-spacing: 3px; }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: linear-gradient(145deg, rgba(255,248,231,0.06) 0%, rgba(255,248,231,0.02) 100%);
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 0 16px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+  }
+
+  .card-title {
+    color: var(--gold);
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(245,200,66,0.4), transparent);
+  }
+
+  /* ===== 输入框 ===== */
+  .input-group { margin-bottom: 14px; }
+  .input-label { color: rgba(245,200,66,0.7); font-size: 12px; margin-bottom: 6px; display: block; letter-spacing: 1px; }
+
+  input[type="text"], input[type="password"], input[type="number"], select {
+    width: 100%;
+    background: rgba(13,27,62,0.8);
+    border: 1px solid rgba(245,200,66,0.3);
+    border-radius: 10px;
+    color: var(--cream);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,200,66,0.1); }
+  select option { background: var(--navy); }
+
+  .amount-row { display: flex; gap: 8px; }
+  .amount-row input[type="number"] { flex: 1; }
+  .amount-row select { width: 90px; flex-shrink: 0; }
+
+  /* ===== 按钮 ===== */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    color: var(--navy);
+    box-shadow: 0 4px 20px rgba(245,200,66,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .btn-gold:active { box-shadow: 0 2px 10px rgba(245,200,66,0.2); }
+
+  .btn-red {
+    background: linear-gradient(135deg, var(--red-dark), var(--red));
+    color: white;
+    box-shadow: 0 4px 15px rgba(192,57,43,0.3);
+  }
+
+  .btn-green {
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+    color: white;
+    box-shadow: 0 4px 15px rgba(39,174,96,0.3);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(245,200,66,0.3);
+    color: rgba(245,200,66,0.7);
+  }
+
+  .btn-sm {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #7B241C, var(--red-dark));
+    color: white;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  /* ===== 玩家列表 ===== */
+  .player-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(245,200,66,0.1);
+    transition: background 0.15s;
+  }
+  .player-item:last-child { border-bottom: none; }
+  .player-item:active { background: rgba(245,200,66,0.05); }
+
+  .player-rank {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+  .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #333; }
+  .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); color: #333; }
+  .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: white; }
+  .rank-n { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+
+  .player-name { flex: 1; color: var(--cream); font-size: 15px; }
+  .player-self { color: var(--gold); }
+
+  .player-coins { text-align: right; }
+  .coins-main { color: var(--gold); font-size: 16px; font-weight: 700; display: block; }
+  .coins-sub { color: rgba(245,200,66,0.5); font-size: 11px; }
+
+  /* ===== 我的余额大显示 ===== */
+  .my-balance {
+    text-align: center;
+    padding: 10px 20px 20px;
+  }
+  .balance-label { color: rgba(245,200,66,0.6); font-size: 12px; letter-spacing: 3px; margin-bottom: 4px; }
+  .balance-amount { font-size: 42px; font-weight: 700; color: var(--gold); text-shadow: 0 0 30px rgba(245,200,66,0.4); line-height: 1; }
+  .balance-unit { font-size: 20px; color: rgba(245,200,66,0.7); }
+  .balance-name { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 4px; }
+
+  /* ===== 底部导航 ===== */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: linear-gradient(180deg, rgba(10,18,40,0.95) 0%, rgba(5,10,25,0.98) 100%);
+    border-top: 1px solid rgba(245,200,66,0.25);
+    display: flex;
+    z-index: 200;
+    backdrop-filter: blur(10px);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 12px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: all 0.2s;
+    gap: 3px;
+  }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 11px; color: rgba(245,200,66,0.5); font-family: 'Noto Serif SC', serif; }
+  .nav-item.active .nav-label { color: var(--gold); }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px rgba(245,200,66,0.6)); }
+
+  /* ===== 分隔线 ===== */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,200,66,0.3), transparent);
+    margin: 16px 0;
+  }
+
+  /* ===== Toast提示 ===== */
+  .toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(10,18,40,0.95);
+    border: 1px solid var(--gold-dark);
+    border-radius: 30px;
+    color: var(--gold);
+    padding: 10px 24px;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s;
+    white-space: nowrap;
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--red); color: #ff8080; }
+  .toast.success { border-color: var(--green-light); color: #80ffb0; }
+
+  /* ===== 登录页 ===== */
+  #loginPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .login-box {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(145deg, rgba(255,248,231,0.07), rgba(255,248,231,0.02));
+    border: 1px solid rgba(245,200,66,0.3);
+    border-radius: 20px;
+    padding: 32px 24px;
+    position: relative;
+  }
+  .login-box::before {
+    content: '✦ ✦ ✦';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--navy);
+    padding: 0 12px;
+    color: var(--gold-dark);
+    font-size: 12px;
+    letter-spacing: 4px;
+  }
+  .login-title {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .login-emoji { font-size: 48px; display: block; margin-bottom: 8px; }
+  .login-title h2 {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--gold);
+    font-size: 20px;
+    text-shadow: 0 0 20px rgba(245,200,66,0.4);
+  }
+  .login-title p { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 4px; }
+
+  /* ===== 管理员页 ===== */
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, var(--red-dark), var(--red));
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  .player-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid rgba(245,200,66,0.08);
+  }
+  .player-checkbox-item:last-child { border-bottom: none; }
+  .player-checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--red);
+    flex-shrink: 0;
+  }
+
+  /* ===== 加载动画 ===== */
+  .loading {
+    text-align: center;
+    padding: 30px;
+    color: rgba(245,200,66,0.4);
+    font-size: 14px;
+  }
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(245,200,66,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== 装饰元素 ===== */
+  .ornament {
+    text-align: center;
+    color: rgba(245,200,66,0.25);
+    font-size: 12px;
+    letter-spacing: 6px;
+    padding: 8px 0;
+  }
+
+  /* ===== 空状态 ===== */
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: rgba(255,255,255,0.3);
+    font-size: 14px;
+  }
+
+  .section-pad { padding: 8px 0; }
+
+  /* ===== 金额输入行 ===== */
+  .quick-amounts {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .quick-btn {
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.25);
+    color: rgba(245,200,66,0.8);
+    padding: 5px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-btn:active { background: rgba(245,200,66,0.25); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(245,200,66,0.2); border-radius: 2px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: fadeIn 0.3s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- ===== 登录页 ===== -->
+<div id="loginPage" class="page active">
+  <div>
+    <div style="text-align:center;margin-bottom:32px">
+      <span style="font-size:64px;display:block;margin-bottom:12px;filter:drop-shadow(0 4px 20px rgba(245,200,66,0.5))">🎩</span>
+      <div style="font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:28px;font-weight:900;text-shadow:0 0 30px rgba(245,200,66,0.6);letter-spacing:2px">MONOPOLY</div>
+      <div style="color:rgba(245,200,66,0.5);font-size:12px;letter-spacing:4px;margin-top:6px">大富翁 · 金币银行</div>
+    </div>
+    <div class="login-box">
+      <div class="login-title">
+        <span class="login-emoji">🏦</span>
+        <h2>进入银行</h2>
+        <p>输入昵称以开始游戏</p>
+      </div>
+      <div class="input-group">
+        <label class="input-label">🪪 玩家昵称</label>
+        <input type="text" id="loginName" placeholder="输入你的昵称..." maxlength="10" autocomplete="off">
+      </div>
+      <button class="btn btn-gold" onclick="doLogin()">🎲 进入游戏</button>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn btn-ghost btn-sm" onclick="goAdmin()">🔐 管理员入口</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 主页（资金榜）===== -->
+<div id="homePage" class="page">
+  <div class="header">
+    <span class="header-title">🏦 资金总览</span>
+    <button class="refresh-btn" onclick="loadPlayers()">🔄 刷新</button>
+  </div>
+  <div id="myBalance" class="my-balance"></div>
+  <div class="card animate-in">
+    <div class="card-title">👑 财富排行榜</div>
+    <div id="playerList"><div class="loading">加载中</div></div>
+  </div>
+  <div class="ornament">✦ ✦ ✦</div>
+</div>
+
+<!-- ===== 转账页 ===== -->
+<div id="transferPage" class="page">
+  <div class="header">
+    <span class="header-title">💸 金币转账</span>
+    <button class="refresh-btn" onclick="initTransferPage()">🔄 刷新</button>
+  </div>
+  <div style="padding:20px 16px 0">
+    <div class="card">
+      <div class="card-title">👤 玩家转账</div>
+      <div class="input-group">
+        <label class="input-label">转账给</label>
+        <select id="transferTo"></select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">金额</label>
+        <div class="amount-row">
+          <input type="number" id="transferAmt" placeholder="输入金额" min="1" step="1">
+          <select id="transferUnit">
+            <option value="1">K</option>
+            <option value="1000">M</option>
+          </select>
+        </div>
+        <div class="quick-amounts">
+          <span class="quick-btn" onclick="setAmt('transferAmt','transferUnit',100,1)">100K</span>
+          <span class="quick-btn" onclick="setAmt('transferAmt','transferUnit',500,1)">500K</span>
+          <span class="quick-btn" onclick="setAmt('transferAmt','transferUnit',1,1000)">1M</span>
+          <span class="quick-btn" onclick="setAmt('transferAmt','transferUnit',5,1000)">5M</span>
+          <span class="quick-btn" onclick="setAmt('transferAmt','transferUnit',10,1000)">10M</span>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="doTransfer()">💸 确认转账</button>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <div class="card-title">🏛️ 银行还款</div>
+      <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:14px">将金币还给银行（从你的账户扣除）</p>
+      <div class="input-group">
+        <label class="input-label">还款金额</label>
+        <div class="amount-row">
+          <input type="number" id="bankAmt" placeholder="输入金额" min="1" step="1">
+          <select id="bankUnit">
+            <option value="1">K</option>
+            <option value="1000">M</option>
+          </select>
+        </div>
+        <div class="quick-amounts">
+          <span class="quick-btn" onclick="setAmt('bankAmt','bankUnit',100,1)">100K</span>
+          <span class="quick-btn" onclick="setAmt('bankAmt','bankUnit',500,1)">500K</span>
+          <span class="quick-btn" onclick="setAmt('bankAmt','bankUnit',1,1000)">1M</span>
+          <span class="quick-btn" onclick="setAmt('bankAmt','bankUnit',5,1000)">5M</span>
+        </div>
+      </div>
+      <button class="btn btn-red" onclick="doPayBank()">🏛️ 还款给银行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 管理员页 ===== -->
+<div id="adminPage" class="page">
+  <div class="header">
+    <span class="header-title">⚙️ 管理面板</span>
+    <button class="refresh-btn" onclick="loadAdminPlayers()">🔄 刷新</button>
+  </div>
+
+  <!-- 管理员密码验证 -->
+  <div id="adminLock" style="padding:40px 16px">
+    <div class="card">
+      <div class="card-title">🔐 管理员验证</div>
+      <div class="input-group">
+        <label class="input-label">管理员密码</label>
+        <input type="password" id="adminPwd" placeholder="输入密码..." maxlength="20">
+      </div>
+      <button class="btn btn-gold" onclick="verifyAdmin()">🔓 解锁</button>
+    </div>
+  </div>
+
+  <!-- 管理员功能 -->
+  <div id="adminPanel" style="display:none;padding:16px 0">
+    <div style="text-align:center;margin-bottom:8px">
+      <span class="admin-badge">⚡ 管理员模式</span>
+    </div>
+
+    <!-- 统一发放 -->
+    <div class="card">
+      <div class="card-title">🎁 统一发放资金</div>
+      <div class="input-group">
+        <label class="input-label">发放金额（每人）</label>
+        <div class="amount-row">
+          <input type="number" id="giveAmt" placeholder="输入金额" min="1" step="1">
+          <select id="giveUnit">
+            <option value="1">K</option>
+            <option value="1000">M</option>
+          </select>
+        </div>
+        <div class="quick-amounts">
+          <span class="quick-btn" onclick="setAmt('giveAmt','giveUnit',500,1)">500K</span>
+          <span class="quick-btn" onclick="setAmt('giveAmt','giveUnit',1,1000)">1M</span>
+          <span class="quick-btn" onclick="setAmt('giveAmt','giveUnit',2,1000)">2M</span>
+          <span class="quick-btn" onclick="setAmt('giveAmt','giveUnit',5,1000)">5M</span>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="doGiveAll()">💰 发放给所有人</button>
+    </div>
+
+    <!-- 单独增加 -->
+    <div class="card">
+      <div class="card-title">➕ 单独增加资金</div>
+      <div class="input-group">
+        <label class="input-label">目标玩家</label>
+        <select id="addTarget"></select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">增加金额</label>
+        <div class="amount-row">
+          <input type="number" id="addAmt" placeholder="输入金额" min="1" step="1">
+          <select id="addUnit">
+            <option value="1">K</option>
+            <option value="1000">M</option>
+          </select>
+        </div>
+        <div class="quick-amounts">
+          <span class="quick-btn" onclick="setAmt('addAmt','addUnit',500,1)">500K</span>
+          <span class="quick-btn" onclick="setAmt('addAmt','addUnit',1,1000)">1M</span>
+          <span class="quick-btn" onclick="setAmt('addAmt','addUnit',5,1000)">5M</span>
+          <span class="quick-btn" onclick="setAmt('addAmt','addUnit',10,1000)">10M</span>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="doAddCoins()">✅ 确认增加</button>
+    </div>
+
+    <!-- 重置游戏 -->
+    <div class="card">
+      <div class="card-title">🔄 重置游戏</div>
+      <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:14px">将所有玩家金币归零，谨慎操作！</p>
+      <button class="btn btn-danger" onclick="doReset()">⚠️ 重置所有玩家金币</button>
+    </div>
+
+    <!-- 删除玩家 -->
+    <div class="card">
+      <div class="card-title">🗑️ 删除玩家</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <label style="color:rgba(255,255,255,0.5);font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="accent-color:var(--red)">
+          全选
+        </label>
+        <button class="btn btn-danger btn-sm" onclick="doDelete()" style="width:auto">🗑️ 删除选中</button>
+      </div>
+      <div id="adminPlayerList"><div class="loading">加载中</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 底部导航 ===== -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-item active" id="nav-home" onclick="showTab('home')">
+    <span class="nav-icon">🏦</span>
+    <span class="nav-label">资金榜</span>
+  </button>
+  <button class="nav-item" id="nav-transfer" onclick="showTab('transfer')">
+    <span class="nav-icon">💸</span>
+    <span class="nav-label">转账</span>
+  </button>
+  <button class="nav-item" id="nav-admin" onclick="showAdminTab()">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">管理</span>
+  </button>
+</nav>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+const API = 'http://localhost:8080/api'; // 修改为你的后端地址
+let currentUser = null;
+let adminPassword = null;
+let allPlayersCache = [];
+
+// ===== Cookie 工具 =====
+function setCookie(name, val, days=365) {
+  document.cookie = `${name}=${encodeURIComponent(val)};max-age=${days*86400};path=/`;
+}
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function delCookie(name) {
+  document.cookie = `${name}=;max-age=0;path=/`;
+}
+
+// ===== Toast =====
+function toast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast', 2800);
+}
+
+// ===== 格式化金额 =====
+function formatCoins(k) {
+  k = Math.floor(Number(k));
+  if (k >= 1000) {
+    const m = Math.floor(k / 1000);
+    const rem = k % 1000;
+    return rem > 0 ? `${m}M ${rem}K` : `${m}M`;
+  }
+  return `${k}K`;
+}
+
+function formatCoinsShort(k) {
+  k = Math.floor(Number(k));
+  if (k >= 1000) return `${(k/1000).toFixed(k%1000===0?0:1)}M`;
+  return `${k}K`;
+}
+
+// ===== 快捷金额 =====
+function setAmt(inputId, unitId, amount, unit) {
+  document.getElementById(inputId).value = amount;
+  document.getElementById(unitId).value = unit;
+}
+
+// ===== 计算K值 =====
+function getKValue(inputId, unitId) {
+  const val = parseFloat(document.getElementById(inputId).value);
+  const unit = parseInt(document.getElementById(unitId).value);
+  if (isNaN(val) || val <= 0) return null;
+  return Math.floor(val * unit);
+}
+
+// ===== 初始化 =====
+async function init() {
+  const name = getCookie('monopoly_user');
+  if (name) {
+    const res = await fetch(`${API}/verify?name=${encodeURIComponent(name)}`).then(r=>r.json()).catch(()=>null);
+    if (res && res.success) {
+      currentUser = { name, coins: res.coins };
+      showMainApp();
+    } else {
+      delCookie('monopoly_user');
+      showPage('loginPage');
+    }
+  } else {
+    showPage('loginPage');
+  }
+}
+
+// ===== 登录 =====
+async function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if (!name) { toast('请输入昵称！', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/login?name=${encodeURIComponent(name)}`).then(r=>r.json());
+    if (res.success) {
+      setCookie('monopoly_user', res.name);
+      currentUser = { name: res.name, coins: res.coins };
+      toast(res.newPlayer ? `欢迎 ${res.name}！你已加入游戏 🎲` : `欢迎回来，${res.name}！`, 'success');
+      setTimeout(showMainApp, 500);
+    } else {
+      toast(res.msg || '登录失败', 'error');
+    }
+  } catch(e) { toast('无法连接服务器', 'error'); }
+}
+
+document.getElementById('loginName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ===== 显示主应用 =====
+function showMainApp() {
+  document.getElementById('bottomNav').style.display = 'flex';
+  showTab('home');
+}
+
+// ===== 页面切换 =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`nav-${tab}`).classList.add('active');
+  if (tab === 'home') {
+    showPage('homePage');
+    loadPlayers();
+  } else if (tab === 'transfer') {
+    showPage('transferPage');
+    initTransferPage();
+  } else if (tab === 'admin') {
+    showPage('adminPage');
+    if (adminPassword) loadAdminPlayers();
+  }
+}
+
+function showAdminTab() {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-admin').classList.add('active');
+  showPage('adminPage');
+  if (adminPassword) loadAdminPlayers();
+}
+
+function goAdmin() {
+  showPage('adminPage');
+  document.getElementById('bottomNav').style.display = 'none';
+}
+
+// ===== 加载玩家列表 =====
+async function loadPlayers() {
+  try {
+    const res = await fetch(`${API}/players`).then(r=>r.json());
+    if (!res.success) return;
+    allPlayersCache = res.players;
+
+    // 更新当前用户余额
+    const me = res.players.find(p => p.name === currentUser?.name);
+    if (me) currentUser.coins = me.coins;
+
+    // 显示我的余额
+    if (currentUser) {
+      document.getElementById('myBalance').innerHTML = `
+        <div class="balance-label">我的余额</div>
+        <div class="balance-amount">${formatCoinsShort(currentUser.coins)}</div>
+        <div class="balance-name">👤 ${currentUser.name}</div>
+      `;
+    }
+
+    // 显示排行榜
+    const list = document.getElementById('playerList');
+    if (res.players.length === 0) {
+      list.innerHTML = '<div class="empty-state">暂无玩家 🎲</div>';
+      return;
+    }
+
+    list.innerHTML = res.players.map((p, i) => {
+      const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+      const isMe = p.name === currentUser?.name;
+      const coins = Math.floor(Number(p.coins));
+      let coinsDisplay = formatCoinsShort(coins);
+      let coinsSub = '';
+      if (coins >= 1000 && coins % 1000 !== 0) coinsSub = `(${coins % 1000}K)`;
+
+      return `
+        <div class="player-item">
+          <div class="player-rank ${rankClass}">${i < 3 ? ['🥇','🥈','🥉'][i] : i+1}</div>
+            <span class="player-name ${isMe ? 'player-self' : ''}">${p.name}${isMe ? ' 👈' : ''}</span>
+          <div class="player-coins">
+            <span class="coins-main">${coinsDisplay}</span>
+            ${coinsSub ? `<span class="coins-sub">${coinsSub}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    document.getElementById('playerList').innerHTML = '<div class="empty-state">⚠️ 加载失败，请刷新</div>';
+  }
+}
+
+// ===== 转账页初始化 =====
+async function initTransferPage() {
+  await loadPlayers();
+  const sel = document.getElementById('transferTo');
+  const others = allPlayersCache.filter(p => p.name !== currentUser?.name);
+  sel.innerHTML = others.length
+    ? others.map(p => `<option value="${p.name}">${p.name} (${formatCoinsShort(p.coins)})</option>`).join('')
+    : '<option value="">暂无其他玩家</option>';
+}
+
+// ===== 玩家转账 =====
+async function doTransfer() {
+  const to = document.getElementById('transferTo').value;
+  const amount = getKValue('transferAmt', 'transferUnit');
+  if (!to) { toast('请选择转账对象', 'error'); return; }
+  if (!amount) { toast('请输入有效金额', 'error'); return; }
+  if (amount > currentUser.coins) {
+    toast(`余额不足！当前 ${formatCoinsShort(currentUser.coins)}`, 'error'); return;
+  }
+  try {
+    const res = await fetch(`${API}/transfer?from=${encodeURIComponent(currentUser.name)}&to=${encodeURIComponent(to)}&amount=${amount}`).then(r=>r.json());
+    if (res.success) {
+      currentUser.coins = res.fromCoins;
+      toast(`✅ 成功转账 ${formatCoinsShort(amount)} 给 ${to}`, 'success');
+      document.getElementById('transferAmt').value = '';
+      initTransferPage();
+    } else {
+      toast(res.msg || '转账失败', 'error');
+    }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 银行还款 =====
+async function doPayBank() {
+  const amount = getKValue('bankAmt', 'bankUnit');
+  if (!amount) { toast('请输入有效金额', 'error'); return; }
+  if (amount > currentUser.coins) {
+    toast(`余额不足！当前 ${formatCoinsShort(currentUser.coins)}`, 'error'); return;
+  }
+  try {
+    const res = await fetch(`${API}/paybank?name=${encodeURIComponent(currentUser.name)}&amount=${amount}`).then(r=>r.json());
+    if (res.success) {
+      currentUser.coins = res.coins;
+      toast(`🏛️ 已还款 ${formatCoinsShort(amount)} 给银行`, 'success');
+      document.getElementById('bankAmt').value = '';
+    } else {
+      toast(res.msg || '还款失败', 'error');
+    }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 管理员验证 =====
+async function verifyAdmin() {
+  const pwd = document.getElementById('adminPwd').value;
+  try {
+    const res = await fetch(`${API}/admin/verify?password=${pwd}`).then(r=>r.json());
+    if (res.success) {
+      adminPassword = pwd;
+      document.getElementById('adminLock').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('bottomNav').style.display = 'flex';
+      toast('🔓 管理员模式已解锁', 'success');
+      loadAdminPlayers();
+    } else {
+      toast('密码错误！', 'error');
+    }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 加载管理员玩家列表 =====
+async function loadAdminPlayers() {
+  try {
+    const res = await fetch(`${API}/players`).then(r=>r.json());
+    if (!res.success) return;
+    allPlayersCache = res.players;
+
+    // 更新下拉框
+    const sel = document.getElementById('addTarget');
+    sel.innerHTML = res.players.map(p =>
+      `<option value="${p.name}">${p.name} (${formatCoinsShort(p.coins)})</option>`
+    ).join('') || '<option>暂无玩家</option>';
+
+    // 删除列表
+    const list = document.getElementById('adminPlayerList');
+    if (res.players.length === 0) {
+      list.innerHTML = '<div class="empty-state">暂无玩家</div>';
+      return;
+    }
+    list.innerHTML = res.players.map(p => `
+      <div class="player-checkbox-item">
+        <input type="checkbox" class="player-cb" value="${p.name}">
+        <span style="flex:1;color:var(--cream);font-size:14px">${p.name}</span>
+        <span style="color:var(--gold);font-size:14px">${formatCoinsShort(p.coins)}</span>
+      </div>
+    `).join('');
+  } catch(e) { toast('加载失败', 'error'); }
+}
+
+// ===== 全选 =====
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.player-cb').forEach(c => c.checked = cb.checked);
+}
+
+// ===== 重置游戏 =====
+async function doReset() {
+  if (!confirm('确定要将所有玩家金币归零吗？此操作不可撤销！')) return;
+  try {
+    const res = await fetch(`${API}/admin/reset?password=${adminPassword}`).then(r=>r.json());
+    if (res.success) {
+      toast('🔄 游戏已重置，所有玩家金币归零', 'success');
+      loadAdminPlayers();
+    } else { toast(res.msg, 'error'); }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 统一发放 =====
+async function doGiveAll() {
+  const amount = getKValue('giveAmt', 'giveUnit');
+  if (!amount) { toast('请输入有效金额', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/admin/giveall?password=${adminPassword}&amount=${amount}`).then(r=>r.json());
+    if (res.success) {
+      toast(`🎁 已向 ${res.count} 名玩家各发放 ${formatCoinsShort(amount)}`, 'success');
+      document.getElementById('giveAmt').value = '';
+      loadAdminPlayers();
+    } else { toast(res.msg, 'error'); }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 单独增加 =====
+async function doAddCoins() {
+  const name = document.getElementById('addTarget').value;
+  const amount = getKValue('addAmt', 'addUnit');
+  if (!name) { toast('请选择玩家', 'error'); return; }
+  if (!amount) { toast('请输入有效金额', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/admin/addcoins?password=${adminPassword}&name=${encodeURIComponent(name)}&amount=${amount}`).then(r=>r.json());
+    if (res.success) {
+      toast(`✅ 已为 ${name} 增加 ${formatCoinsShort(amount)}`, 'success');
+      document.getElementById('addAmt').value = '';
+      loadAdminPlayers();
+    } else { toast(res.msg, 'error'); }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 删除玩家 =====
+async function doDelete() {
+  const checked = [...document.querySelectorAll('.player-cb:checked')].map(c => c.value);
+  if (checked.length === 0) { toast('请选择要删除的玩家', 'error'); return; }
+  if (!confirm(`确定删除：${checked.join('、')} 吗？`)) return;
+  try {
+    const res = await fetch(`${API}/admin/delete?password=${adminPassword}&names=${encodeURIComponent(checked.join(','))}`).then(r=>r.json());
+    if (res.success) {
+      toast(`🗑️ 已删除 ${res.deleted.join('、')}`, 'success');
+      document.getElementById('selectAll').checked = false;
+      loadAdminPlayers();
+    } else { toast(res.msg, 'error'); }
+  } catch(e) { toast('网络错误', 'error'); }
+}
+
+// ===== 启动 =====
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

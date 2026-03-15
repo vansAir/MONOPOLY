@@ -1,0 +1,33 @@
+# ======= 编译产物 =======
+# 忽略 cargo build 生成的所有内容
+/target/
+
+# ======= 依赖与锁文件 =======
+# 如果你开发的是 Executable（可执行项目），建议提交 Cargo.lock 以锁定依赖版本
+# 如果你开发的是 Library（库项目），通常不需要提交 Cargo.lock
+# Cargo.lock
+
+# ======= 临时/备份文件 =======
+# 忽略由编辑器或系统生成的临时文件
+*.rs.bk
+*.swp
+*.save
+.DS_Store
+
+# ======= 环境变量与私密信息 =======
+# 忽略本地配置和秘钥文件
+.env
+.env.local
+.env.*.local
+
+# ======= 测试与覆盖率 =======
+# 忽略集成测试产生的临时数据
+*.profraw
+/tarpaulin-report.json
+/htmlcov/
+
+# ======= IDE 配置 =======
+# 根据你使用的编辑器取消注释
+# .vscode/
+# .idea/
+# *.iml
