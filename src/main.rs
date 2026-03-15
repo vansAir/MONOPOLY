@@ -338,7 +338,7 @@ async fn main() {
         .with_state(players);
 
     // 绑定地址
-    let addr = "0.0.0.0:8080";
+    let addr = "0.0.0.0:8860";
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
     println!(r#"
